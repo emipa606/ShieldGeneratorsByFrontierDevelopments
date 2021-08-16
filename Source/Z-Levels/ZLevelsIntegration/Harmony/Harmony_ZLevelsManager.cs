@@ -1,4 +1,5 @@
 using HarmonyLib;
+using JetBrains.Annotations;
 using Verse;
 using ZLevels;
 
@@ -7,17 +8,20 @@ namespace FrontierDevelopments.Shields.ZLevelsIntegration.Harmony
     public class Harmony_ZLevelsManager
     {
         [HarmonyPatch(typeof(ZLevelsManager), nameof(ZLevelsManager.CreateUpperLevel))]
-        static class Patch_CreateUpperLevel
+        [UsedImplicitly]
+        private static class Patch_CreateUpperLevel
         {
             [HarmonyPostfix]
-            public static void AssociateShieldManager(Map __result, Map origin, IntVec3 playerStartSpot)
+            public static void AssociateShieldManager(Map __result, Map origin)
             {
                 var manager = ShieldManager.For(origin, false);
-                if (manager != null)
+                if (manager == null)
                 {
-                    manager.AssociateWithMap(__result); 
-                    ShieldManager.Register(__result, manager);
+                    return;
                 }
+
+                manager.AssociateWithMap(__result);
+                ShieldManager.Register(__result, manager);
             }
         }
     }

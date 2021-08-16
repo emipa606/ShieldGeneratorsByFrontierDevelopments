@@ -1,22 +1,22 @@
 using System.Collections.Generic;
-using DubsBadHygiene;
-using RimWorld;
 using System.Text;
+using DubsBadHygiene;
 using FrontierDevelopments.General;
+using RimWorld;
 using Verse;
 
 namespace FrontierDevelopments.Shields.BadHygiene
 {
     public class Comp_DubsAirVent : CompAirconIndoorUnit
     {
+        private float _capacity;
         private bool _connected = true;
-        private float _capacity = 0f;
 
         public bool Active => _connected && PipeComp.pipeNet.CoolingCap > 0;
 
         public float VentCapacity
         {
-            get => WorkingNow? _capacity : 0f;
+            get => WorkingNow ? _capacity : 0f;
             set => _capacity = value;
         }
 
@@ -32,13 +32,15 @@ namespace FrontierDevelopments.Shields.BadHygiene
             {
                 return base.CompInspectStringExtra();
             }
+
             var stringBuilder = new StringBuilder();
             if (PipeComp.pipeNet.CoolingCap < 1f)
             {
                 stringBuilder.Append("LowCoolingCap".Translate());
                 stringBuilder.Append("\n");
             }
-            stringBuilder.Append("CoolingUnits".Translate((int)VentCapacity));
+
+            stringBuilder.Append("CoolingUnits".Translate((int) VentCapacity));
             return stringBuilder.ToString().TrimEndNewlines();
         }
 
@@ -48,7 +50,7 @@ namespace FrontierDevelopments.Shields.BadHygiene
             {
                 yield return gizmo;
             }
-            
+
             if (OwnershipUtility.PlayerOwns(parent))
             {
                 yield return new Command_Toggle

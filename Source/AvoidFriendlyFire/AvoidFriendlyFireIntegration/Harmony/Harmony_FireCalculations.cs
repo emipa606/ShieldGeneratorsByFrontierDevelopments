@@ -3,6 +3,7 @@ using System.Linq;
 using AvoidFriendlyFire;
 using FrontierDevelopments.General;
 using HarmonyLib;
+using JetBrains.Annotations;
 using Verse;
 
 namespace FrontierDevelopments.Shields.AvoidFriendlyFireIntegration.Harmony
@@ -21,10 +22,12 @@ namespace FrontierDevelopments.Shields.AvoidFriendlyFireIntegration.Harmony
         }
 
         [HarmonyPatch(typeof(FireCalculations), "GetShootablePointsBetween")]
-        static class Patch_FireCalculations_old
+        [UsedImplicitly]
+        private static class Patch_FireCalculations_old
         {
             [HarmonyPostfix]
-            static IEnumerable<int> AddShieldCheck(IEnumerable<int> results, IntVec3 origin, IntVec3 target, Map map)
+            private static IEnumerable<int> AddShieldCheck(IEnumerable<int> results, IntVec3 origin,
+                Map map)
             {
                 if (Mod.Settings.EnableAIVerbFindShotLine)
                 {
@@ -32,7 +35,7 @@ namespace FrontierDevelopments.Shields.AvoidFriendlyFireIntegration.Harmony
 
                     foreach (var cellIndex in results)
                     {
-                        if(!IsCellShielded(origin, cellIndex, map, fields))
+                        if (!IsCellShielded(origin, cellIndex, map, fields))
                         {
                             yield return cellIndex;
                         }

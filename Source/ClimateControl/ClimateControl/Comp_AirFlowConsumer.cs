@@ -8,10 +8,11 @@ namespace FrontierDevelopments.ClimateControl
     public class Comp_AirFlowConsumer : CompAirFlowConsumer
     {
         private bool _connected = true;
-    
+
         public override bool IsOperating()
         {
-            return _connected && AirFlowNet != null && AirFlowNet.CurrentIntakeAir > 0f && !float.IsNaN(AirFlowNet.AverageConvertedTemperature);
+            return _connected && AirFlowNet is {CurrentIntakeAir: > 0f} &&
+                   !float.IsNaN(AirFlowNet.AverageConvertedTemperature);
         }
 
         public override string CompInspectStringExtra()
@@ -20,7 +21,7 @@ namespace FrontierDevelopments.ClimateControl
                 ? ConnectedKey.Translate()
                 : NotConnectedKey.Translate();
         }
-    
+
         public override IEnumerable<Gizmo> CompGetGizmosExtra()
         {
             foreach (var gizmo in base.CompGetGizmosExtra())
@@ -40,7 +41,7 @@ namespace FrontierDevelopments.ClimateControl
                 };
             }
         }
-    
+
         public override void PostExposeData()
         {
             base.PostExposeData();

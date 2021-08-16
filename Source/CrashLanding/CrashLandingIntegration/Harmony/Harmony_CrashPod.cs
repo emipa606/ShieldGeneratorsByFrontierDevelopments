@@ -4,6 +4,7 @@ using System.Reflection;
 using CrashLanding;
 using FrontierDevelopments.General;
 using HarmonyLib;
+using JetBrains.Annotations;
 using RimWorld;
 using RimWorld.Planet;
 using Verse;
@@ -18,7 +19,7 @@ namespace FrontierDevelopments.Shields.Module.CrashLandingModule
             return typeof(CrashPod)
                 .AllSubclasses()
                 .Where(type => type.Name.Contains("_part") == getParts)
-                .SelectMany(type => type.GetMethods(BindingFlags.Instance |  BindingFlags.NonPublic))
+                .SelectMany(type => type.GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
                 .Where(method => method.Name == "Impact");
         }
 
@@ -28,24 +29,25 @@ namespace FrontierDevelopments.Shields.Module.CrashLandingModule
                 .IsActive()
                 .Intersects(PositionUtility.ToVector3WithY(crashPod.Position, 0))
                 .Block(damage);
-            if (crashPodBlocked)
+            if (!crashPodBlocked)
             {
-                Messages.Message("fd.shields.incident.crashpod.blocked.body".Translate(),
-                    new GlobalTargetInfo(crashPod.Position, crashPod.Map), MessageTypeDefOf.NeutralEvent);
-                crashPod.def.projectile.soundExplode.PlayOneShot(
-                    SoundInfo.InMap(new TargetInfo(crashPod.Position, crashPod.Map)));
-                crashPod.Destroy();
-                return true;
+                return false;
             }
 
-            return false;
+            Messages.Message("fd.shields.incident.crashpod.blocked.body".Translate(),
+                new GlobalTargetInfo(crashPod.Position, crashPod.Map), MessageTypeDefOf.NeutralEvent);
+            crashPod.def.projectile.soundExplode.PlayOneShot(
+                SoundInfo.InMap(new TargetInfo(crashPod.Position, crashPod.Map)));
+            crashPod.Destroy();
+            return true;
         }
 
         [HarmonyPatch]
-        static class Patch_CrashPod_Impact
+        [UsedImplicitly]
+        private static class Patch_CrashPod_Impact
         {
             [HarmonyTargetMethods]
-            private static IEnumerable<MethodInfo> FindAnonymousFunction(HarmonyLib.Harmony instance)
+            private static IEnumerable<MethodInfo> FindAnonymousFunction()
             {
                 return SelectImpactMethods(false);
             }
@@ -57,12 +59,13 @@ namespace FrontierDevelopments.Shields.Module.CrashLandingModule
                 return !Block(__instance, Mod.Settings.SkyfallerDamage);
             }
         }
-        
+
         [HarmonyPatch]
-        static class Patch_CrashPod_Part_Impact
+        [UsedImplicitly]
+        private static class Patch_CrashPod_Part_Impact
         {
             [HarmonyTargetMethods]
-            private static IEnumerable<MethodInfo> FindAnonymousFunction(HarmonyLib.Harmony instance)
+            private static IEnumerable<MethodInfo> FindAnonymousFunction()
             {
                 return SelectImpactMethods(true);
             }

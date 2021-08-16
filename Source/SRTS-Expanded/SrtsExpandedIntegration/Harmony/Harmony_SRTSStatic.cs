@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
+using JetBrains.Annotations;
 using RimWorld;
 using RimWorld.Planet;
 using SRTS;
@@ -12,12 +13,22 @@ namespace FrontierDevelopments.Shields.SrtsExpandedIntegration.Harmony
 {
     public class Harmony_SRTSStatic
     {
+        private static Faction GetCaravanFaction(Caravan caravan)
+        {
+            if (caravan == null)
+            {
+                return Faction.OfPlayer;
+            }
+
+            return caravan.Faction;
+        }
+
         private class Patcher
         {
-            private LocalBuilder faction;
+            private readonly LocalBuilder faction;
 
-            private bool storedFaction = false;
-            private int swappedTargetCounts = 0;
+            private bool storedFaction;
+            private int swappedTargetCounts;
 
             public Patcher(ILGenerator il)
             {
@@ -28,16 +39,15 @@ namespace FrontierDevelopments.Shields.SrtsExpandedIntegration.Harmony
             {
                 var original = instructions.ToList();
                 var patched = SwapTargeterCalls(AddStoreShipFaction(original)).ToList();
-                
+
                 if (storedFaction && swappedTargetCounts > 0)
                 {
                     return patched;
                 }
-                else
-                {
-                    Log.Warning("FrontierDevelopments Shields SRTS Expanded Support: Unable to add support for ships landing in shields");
-                    return original;
-                }
+
+                Log.Warning(
+                    "FrontierDevelopments Shields SRTS Expanded Support: Unable to add support for ships landing in shields");
+                return original;
             }
 
             private IEnumerable<CodeInstruction> AddStoreShipFaction(IEnumerable<CodeInstruction> instructions)
@@ -50,7 +60,8 @@ namespace FrontierDevelopments.Shields.SrtsExpandedIntegration.Harmony
                         storedFaction = true;
                         yield return instruction;
                         yield return new CodeInstruction(OpCodes.Dup);
-                        yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(Harmony_SRTSStatic), nameof(Harmony_SRTSStatic.GetCaravanFaction)));
+                        yield return new CodeInstruction(OpCodes.Call,
+                            AccessTools.Method(typeof(Harmony_SRTSStatic), nameof(GetCaravanFaction)));
                         yield return new CodeInstruction(OpCodes.Stloc, faction);
                     }
                     else
@@ -86,21 +97,12 @@ namespace FrontierDevelopments.Shields.SrtsExpandedIntegration.Harmony
             }
         }
 
-        private static Faction GetCaravanFaction(Caravan caravan)
-        {
-            if (caravan == null)
-            {
-                return Faction.OfPlayer;
-            }
-
-            return caravan.Faction;
-        }
-
         [HarmonyPatch]
-        static class Patch_Targeter
+        [UsedImplicitly]
+        private static class Patch_Targeter
         {
             [HarmonyTargetMethod]
-            private static MethodInfo Target(HarmonyLib.Harmony instance)
+            private static MethodInfo Target()
             {
                 return typeof(SRTSStatic)
                     .GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Static)

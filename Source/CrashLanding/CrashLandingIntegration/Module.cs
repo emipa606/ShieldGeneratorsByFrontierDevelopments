@@ -1,10 +1,6 @@
-using System;
-using System.Linq;
 using System.Reflection;
 using CrashLanding;
 using FrontierDevelopments.Shields.Harmony;
-using HarmonyLib;
-using RimWorld;
 using Verse;
 
 namespace FrontierDevelopments.Shields.Module.CrashLandingModule
@@ -14,10 +10,10 @@ namespace FrontierDevelopments.Shields.Module.CrashLandingModule
         public Module(ModContentPack content) : base(content)
         {
             Log.Message("Frontier Developments Shields :: Loading Crash Landing support");
-            
+
             var harmony = new HarmonyLib.Harmony("FrontierDevelopment.Shields.CrashLanding");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
-            
+
             Harmony_Projectile.BlacklistType(typeof(CrashPod));
 
             // var baseType = Type.GetType("CrashLanding.CrashPod, CrashLanding");

@@ -12,8 +12,8 @@ namespace FrontierDevelopments.Shields.BadHygiene
         {
             BuildingAirConBaseUnit = GetModTexture("Dubs Bad Hygiene", "DBH/Things/Building/Heating/Aircon");
         }
-        
-        static Texture2D GetModTexture(string modName, string resourcePath)
+
+        private static Texture2D GetModTexture(string modName, string resourcePath)
         {
             return ModLister.HasActiveModWithName(modName)
                 ? ContentFinder<Texture2D>.Get(resourcePath, ShaderDatabase.Transparent)

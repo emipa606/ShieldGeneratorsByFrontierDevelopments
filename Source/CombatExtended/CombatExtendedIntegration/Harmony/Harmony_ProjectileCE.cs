@@ -6,6 +6,7 @@ using FrontierDevelopments.General;
 using FrontierDevelopments.Shields;
 using FrontierDevelopments.Shields.Harmony;
 using HarmonyLib;
+using JetBrains.Annotations;
 using UnityEngine;
 using Verse;
 
@@ -15,11 +16,15 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
     {
         private static readonly MethodInfo impactMethod = AccessTools.Method(typeof(ProjectileCE), "Impact");
 
-        private static bool IsExplosive(ProjectileCE projectile) =>
-            projectile is ProjectileCE_Explosive || projectile.AllComps.OfType<CompExplosiveCE>().Any();
+        private static bool IsExplosive(ProjectileCE projectile)
+        {
+            return projectile is ProjectileCE_Explosive || projectile.AllComps.OfType<CompExplosiveCE>().Any();
+        }
 
-        private static bool IsOverhead(ProjectileCE projectile) =>
-            projectile.def.projectile.flyOverhead;
+        private static bool IsOverhead(ProjectileCE projectile)
+        {
+            return projectile.def.projectile.flyOverhead;
+        }
 
         private static SoundDef GetExplosionSound(CompProperties_ExplosiveCE props)
         {
@@ -75,7 +80,7 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
                 onBlock);
         }
 
-        private static bool Impact(ProjectileCE projectile, IShieldField shield, Vector3 position)
+        private static bool Impact(ProjectileCE projectile, IShieldField shield)
         {
             var traverse = new Traverse(projectile);
             var ticksToImpact = traverse.Field("ticksToImpact");
@@ -89,20 +94,24 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
                 var amount = ticksToImpact.GetValue<int>();
                 if (amount > startingTicksToImpact)
                 {
-                    Log.Message("Unable to find good place to detonate " + projectile.ThingID + ", destroying without detonating");
+                    Log.Message("Unable to find good place to detonate " + projectile.ThingID +
+                                ", destroying without detonating");
                     return false;
                 }
+
                 ticksToImpact.SetValue(amount + 1);
             }
-            impactMethod.Invoke(projectile, new object[] { null });
+
+            impactMethod.Invoke(projectile, new object[] {null});
             return true;
         }
 
         [HarmonyPatch(typeof(ProjectileCE), "CheckForCollisionBetween")]
-        static class Patch_CheckForCollisionBetween
+        [UsedImplicitly]
+        private static class Patch_CheckForCollisionBetween
         {
             [HarmonyPrefix]
-            static bool CheckShieldCollision(ProjectileCE __instance, Vector2 ___origin, int ___ticksToImpact)
+            private static bool CheckShieldCollision(ProjectileCE __instance, Vector2 ___origin, int ___ticksToImpact)
             {
                 var current = __instance.ExactPosition;
                 var last = current - __instance.ExactMinusLastPos;
@@ -112,9 +121,9 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
                     last,
                     current,
                     ___ticksToImpact,
-                    ___origin, (shield, point) =>
+                    ___origin, (shield, _) =>
                     {
-                        if(IsOverhead(__instance))
+                        if (IsOverhead(__instance))
                         {
                             ExplosionUtility.DoSmokeExplosion(__instance, GetExplosionSound(__instance));
                             __instance.Destroy();
@@ -122,7 +131,7 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
                         else
                         {
                             // check if it is an explosive projectile to impact
-                            if (!IsExplosive(__instance) || !Impact(__instance, shield, point))
+                            if (!IsExplosive(__instance) || !Impact(__instance, shield))
                             {
                                 // this is a regular projectile, remove it
                                 __instance.Destroy();
@@ -133,10 +142,11 @@ namespace FrontierDevelopments.CombatExtendedIntegration.Harmony
         }
 
         [HarmonyPatch(typeof(ProjectileCE), "ImpactSomething")]
-        static class Patch_CheckCellForCollision
+        [UsedImplicitly]
+        private static class Patch_CheckCellForCollision
         {
             [HarmonyPrefix]
-            static bool PreventBlockedProjectilesFromImpacting(ProjectileCE __instance)
+            private static bool PreventBlockedProjectilesFromImpacting(ProjectileCE __instance)
             {
                 return !__instance.Destroyed;
             }

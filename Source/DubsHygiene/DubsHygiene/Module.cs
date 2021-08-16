@@ -1,9 +1,10 @@
-using DubsBadHygiene;
-using HarmonyLib;
-using RimWorld;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DubsBadHygiene;
+using FrontierDevelopments.General.Comps;
+using HarmonyLib;
+using JetBrains.Annotations;
+using RimWorld;
 using Verse;
 
 namespace FrontierDevelopments.Shields.BadHygiene
@@ -13,28 +14,35 @@ namespace FrontierDevelopments.Shields.BadHygiene
         public Module(ModContentPack content) : base(content)
         {
             Log.Message("Frontier Developments Shields :: Loading Dubs Bad Hygiene support");
-            
+
             var harmony = new HarmonyLib.Harmony("FrontierDevelopment.Shields.BadHygiene");
             harmony.PatchAll(Assembly.GetExecutingAssembly());
         }
 
         [HarmonyPatch(typeof(DefGenerator), nameof(DefGenerator.GenerateImpliedDefs_PostResolve))]
-        static class Patch_GenerateImpliedDefs_PostResolve
+        [UsedImplicitly]
+        private static class Patch_GenerateImpliedDefs_PostResolve
         {
             private static bool EnableThisMod()
             {
                 if (!Mod.Settings.EnableDubsBadHygieneSupport)
+                {
                     return false;
+                }
 
                 if (!Mod.Settings.EnableCentralizedClimateControlSupport)
+                {
                     return true;
+                }
 
                 foreach (var modInfo in ModsConfig.ActiveModsInLoadOrder)
                 {
                     switch (modInfo.PackageId.ToLower())
                     {
-                        case "dubwise.dubsbadhygiene": return true;
-                        case "mlie.centralizedclimatecontrol": return false;
+                        case "dubwise.dubsbadhygiene":
+                            return true;
+                        case "mlie.centralizedclimatecontrol":
+                            return false;
                     }
                 }
 
@@ -44,31 +52,34 @@ namespace FrontierDevelopments.Shields.BadHygiene
             [HarmonyPostfix]
             public static void PatchShieldsForDubsSupport()
             {
-                if (EnableThisMod())
+                if (!EnableThisMod())
                 {
-                    Log.Message("Frontier Developments Shields :: Using Dubs Bad Hygiene cooling. To support Centralize Climate Control disable Dubs support or load CCC first in the mod list.");
-                    Patch();
+                    return;
                 }
+
+                Log.Message(
+                    "Frontier Developments Shields :: Using Dubs Bad Hygiene cooling. To support Centralize Climate Control disable Dubs support or load CCC first in the mod list.");
+                Patch();
             }
 
             private static void ReplaceHeatsink(ThingDef def)
             {
-                foreach (CompProperties comp in def.comps)
+                foreach (var comp in def.comps)
                 {
-                    if (comp.compClass == typeof(General.Comps.Comp_HeatSink))
+                    if (comp.compClass == typeof(Comp_HeatSink))
                     {
                         comp.compClass = typeof(Comp_BadHygieneHeatsink);
                     }
                 }
-                
-                def.comps.Add(new CompProperties_CompAirconUnit()
+
+                def.comps.Add(new CompProperties_CompAirconUnit
                 {
                     compClass = typeof(Comp_DubsAirVent),
                     energyPerSecond = -25,
                     CoolingRate = 100,
                     Capacity = 100
                 });
-                
+
                 def.comps.Add(new CompProperties_Pipe
                 {
                     mode = PipeType.Air
@@ -77,8 +88,12 @@ namespace FrontierDevelopments.Shields.BadHygiene
 
             private static bool HasHeatsink(ThingDef def)
             {
-                if (def.comps == null || def.comps.Count < 1) return false;
-                return def.comps.Any(comp => comp.compClass == typeof(General.Comps.Comp_HeatSink));
+                if (def.comps == null || def.comps.Count < 1)
+                {
+                    return false;
+                }
+
+                return def.comps.Any(comp => comp.compClass == typeof(Comp_HeatSink));
             }
 
             private static void Patch()
@@ -89,6 +104,4 @@ namespace FrontierDevelopments.Shields.BadHygiene
             }
         }
     }
-
-    
 }
